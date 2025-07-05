@@ -1,0 +1,24 @@
+CREATE OR REPLACE FUNCTION update_prix_produit()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Vérifier si la date d'insertion est la plus récente pour ce produit
+    IF NEW.dateChangement = (
+        SELECT MAX(dateChangement)
+        FROM HistoriquePrixProduit
+        WHERE idProduit = NEW.idProduit
+    ) THEN
+        -- Mettre à jour le prix dans la table Produit
+        UPDATE Produit
+        SET prixProduit = NEW.prix
+        WHERE idProduit = NEW.idProduit;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Création du trigger
+CREATE TRIGGER trg_update_prix_produit
+AFTER INSERT ON HistoriquePrixProduit
+FOR EACH ROW
+EXECUTE FUNCTION update_prix_produit();
